@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* আপনি চাইলে গ্লোবাল ফন্ট বা স্টাইল নিচে যুক্ত করতে পারেন */
+body {
+  background-color: #f9fafb;
+}
