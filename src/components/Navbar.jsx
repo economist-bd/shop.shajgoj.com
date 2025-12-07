@@ -2,19 +2,26 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, User, Menu, Search, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const Navbar = ({ user, isAdmin }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { cart } = useCart();
 
   // সাজগোজের মতো ক্যাটাগরি লিস্ট
-  const categories = [
-    { name: "Makeup", sub: ["Face", "Eyes", "Lips", "Nails"] },
-    { name: "Skin", sub: ["Moisturizer", "Serum", "Sunscreen", "Face Wash"] },
-    { name: "Hair", sub: ["Shampoo", "Oil", "Conditioner", "Color"] },
-    { name: "Personal Care", sub: ["Bath & Body", "Dental", "Hygiene"] },
-    { name: "Mom & Baby", sub: ["Baby Food", "Diapers", "Skin Care"] },
-  ];
+  useEffect(() => {
+  const fetchCats = async () => {
+    const docSnap = await getDoc(doc(db, "siteConfig", "categories"));
+    if (docSnap.exists()) {
+      // সাধারণ স্ট্রিং লিস্টকে অবজেক্টে রূপান্তর করছি যাতে মেনু স্ট্রাকচার ঠিক থাকে
+      const list = docSnap.data().list || [];
+      const formatted = list.map(c => ({ name: c, sub: [] })); 
+      setCategories(formatted);
+    }
+  };
+  fetchCats();
+}, []);
 
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
