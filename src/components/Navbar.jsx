@@ -107,7 +107,12 @@ const Navbar = ({ user, isAdmin }) => {
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#c21760] transition-all duration-300 group-hover:w-full"></span>
               </li>
             ))}
-            <li className="text-[#c21760] cursor-pointer hover:underline">Offers</li>
+            <li className="text-[#c21760] font-bold cursor-pointer hover:underline relative group">
+  <Link to="/offers" className="flex items-center gap-1">
+    Offers
+    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] px-1 rounded animate-pulse">HOT</span>
+  </Link>
+</li>
           </ul>
         </div>
       </div>

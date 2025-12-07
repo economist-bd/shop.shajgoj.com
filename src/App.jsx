@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import ProductDetails from './pages/ProductDetails';
 import UserProfile from './pages/UserProfile';
 import Footer from './components/Footer';
+import Offer from './pages/Offer';
 // নতুন যুক্ত করা হয়েছে
 import Cart from './pages/Cart'; 
 import { auth } from './firebase';
@@ -40,6 +41,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/product/:id" element={<ProductDetails />} />
+          <Route path="/offers" element={<Offer />} />
           
           {/* এই লাইনটি নতুন যুক্ত করা হয়েছে */}
           <Route path="/cart" element={<Cart />} />
