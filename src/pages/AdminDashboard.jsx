@@ -1,41 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, orderBy, query } from 'firebase/firestore';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('addProduct');
-  
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* সাইডবার */}
-      <aside className="w-64 bg-gray-800 text-white p-6 hidden md:block">
-        <h2 className="text-2xl font-bold mb-8">Admin Panel</h2>
-        <nav className="flex flex-col gap-4">
-          <button onClick={() => setActiveTab('stats')} className={`text-left p-2 rounded ${activeTab==='stats' ? 'bg-[#c21760]' : ''}`}>Dashboard</button>
-          <button onClick={() => setActiveTab('addProduct')} className={`text-left p-2 rounded ${activeTab==='addProduct' ? 'bg-[#c21760]' : ''}`}>Add Product</button>
-          <button onClick={() => setActiveTab('orders')} className={`text-left p-2 rounded ${activeTab==='orders' ? 'bg-[#c21760]' : ''}`}>Orders</button>
-          <button onClick={() => setActiveTab('users')} className={`text-left p-2 rounded ${activeTab==='users' ? 'bg-[#c21760]' : ''}`}>Users</button>
+      <aside className="w-64 bg-gray-900 text-white min-h-screen hidden md:block">
+        <div className="p-6 text-2xl font-bold text-[#c21760]">Admin Panel</div>
+        <nav className="flex flex-col">
+          <button onClick={() => setActiveTab('addProduct')} className={`p-4 text-left hover:bg-gray-800 ${activeTab==='addProduct'?'bg-[#c21760]':''}`}>Add Product</button>
+          <button onClick={() => setActiveTab('manageProducts')} className={`p-4 text-left hover:bg-gray-800 ${activeTab==='manageProducts'?'bg-[#c21760]':''}`}>Manage Products</button>
+          <button onClick={() => setActiveTab('orders')} className={`p-4 text-left hover:bg-gray-800 ${activeTab==='orders'?'bg-[#c21760]':''}`}>Orders</button>
         </nav>
       </aside>
 
       {/* মেইন কন্টেন্ট */}
-      <main className="flex-1 p-8">
-        <h1 className="text-3xl font-bold mb-6 text-gray-700 capitalize">{activeTab}</h1>
-
+      <main className="flex-1 p-6 overflow-y-auto">
         {activeTab === 'addProduct' && <AddProductForm />}
+        {activeTab === 'manageProducts' && <ManageProducts />}
         {activeTab === 'orders' && <OrderList />}
-        {activeTab === 'stats' && <DashboardStats />}
       </main>
     </div>
   );
 };
 
-// সাব-কম্পোনেন্ট: পণ্য যুক্ত করা
+// ১. পণ্য যুক্ত করা
 const AddProductForm = () => {
-  const [formData, setFormData] = useState({
-    name: '', price: '', category: '', description: '', image: ''
-  });
-
+  const [formData, setFormData] = useState({ name: '', price: '', category: '', description: '', image: '' });
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -47,83 +42,136 @@ const AddProductForm = () => {
       alert('Product Added Successfully!');
       setFormData({ name: '', price: '', category: '', description: '', image: '' });
     } catch (error) {
-      console.error(error);
-      alert('Error adding product');
+      alert("Error: " + error.message);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow max-w-lg">
-      <div className="mb-4">
-        <label className="block text-sm font-bold mb-2">Product Name</label>
-        <input type="text" className="w-full border p-2 rounded" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} required />
-      </div>
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-           <label className="block text-sm font-bold mb-2">Price</label>
-           <input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e=>setFormData({...formData, price: e.target.value})} required />
-        </div>
-        <div>
-           <label className="block text-sm font-bold mb-2">Category</label>
+    <div className="bg-white p-6 rounded shadow max-w-2xl mx-auto">
+      <h2 className="text-xl font-bold mb-4">নতুন পণ্য যুক্ত করুন</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input type="text" placeholder="Product Name" className="w-full border p-2 rounded" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} required />
+        <div className="grid grid-cols-2 gap-4">
+           <input type="number" placeholder="Price" className="w-full border p-2 rounded" value={formData.price} onChange={e=>setFormData({...formData, price: e.target.value})} required />
            <select className="w-full border p-2 rounded" value={formData.category} onChange={e=>setFormData({...formData, category: e.target.value})}>
-             <option>Select</option>
+             <option value="">Category</option>
              <option>Makeup</option>
              <option>Skin</option>
              <option>Hair</option>
            </select>
         </div>
-      </div>
-      <div className="mb-4">
-        <label className="block text-sm font-bold mb-2">Image URL</label>
-        <input type="text" className="w-full border p-2 rounded" placeholder="https://..." value={formData.image} onChange={e=>setFormData({...formData, image: e.target.value})} />
-      </div>
-      <button type="submit" className="bg-[#c21760] text-white py-2 px-4 rounded hover:bg-pink-700 w-full">Add Product</button>
-    </form>
+        <textarea placeholder="Description" className="w-full border p-2 rounded" value={formData.description} onChange={e=>setFormData({...formData, description: e.target.value})}></textarea>
+        <input type="text" placeholder="Image URL (e.g. https://...)" className="w-full border p-2 rounded" value={formData.image} onChange={e=>setFormData({...formData, image: e.target.value})} />
+        <button type="submit" className="w-full bg-[#c21760] text-white py-2 rounded font-bold">Upload Product</button>
+      </form>
+    </div>
   );
 };
 
-// সাব-কম্পোনেন্ট: অর্ডার লিস্ট (ডামি)
-const OrderList = () => (
-    <div className="bg-white rounded shadow overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-            <thead>
-                <tr className="bg-gray-200">
-                    <th className="p-4 border">Order ID</th>
-                    <th className="p-4 border">Customer</th>
-                    <th className="p-4 border">Amount</th>
-                    <th className="p-4 border">Status</th>
-                    <th className="p-4 border">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td className="p-4 border">#ORD-001</td>
-                    <td className="p-4 border">Monjurul Haque</td>
-                    <td className="p-4 border">৳ 1,250</td>
-                    <td className="p-4 border"><span className="bg-yellow-200 text-yellow-800 py-1 px-3 rounded text-xs">Pending</span></td>
-                    <td className="p-4 border"><button className="text-blue-600">View</button></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-);
+// ২. পণ্য ম্যানেজ (ডিলিট) করা
+const ManageProducts = () => {
+  const [products, setProducts] = useState([]);
 
-// সাব-কম্পোনেন্ট: স্ট্যাটস
-const DashboardStats = () => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-blue-500 text-white p-6 rounded shadow">
-            <h3 className="text-xl">Total Sales</h3>
-            <p className="text-3xl font-bold">৳ ৫০,০০০</p>
-        </div>
-        <div className="bg-green-500 text-white p-6 rounded shadow">
-            <h3 className="text-xl">Total Orders</h3>
-            <p className="text-3xl font-bold">১২০ টি</p>
-        </div>
-        <div className="bg-purple-500 text-white p-6 rounded shadow">
-            <h3 className="text-xl">Active Products</h3>
-            <p className="text-3xl font-bold">৪৫০ টি</p>
-        </div>
+  const fetchProducts = async () => {
+    const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  };
+
+  useEffect(() => { fetchProducts(); }, []);
+
+  const handleDelete = async (id) => {
+    if(window.confirm("Are you sure?")) {
+      await deleteDoc(doc(db, "products", id));
+      fetchProducts(); // রিফ্রেশ লিস্ট
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold mb-4">সকল পণ্য ({products.length})</h2>
+      <div className="bg-white rounded shadow overflow-x-auto">
+        <table className="w-full text-left">
+          <thead className="bg-gray-200">
+            <tr>
+              <th className="p-3">Image</th>
+              <th className="p-3">Name</th>
+              <th className="p-3">Price</th>
+              <th className="p-3">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map(product => (
+              <tr key={product.id} className="border-b">
+                <td className="p-3"><img src={product.image} className="w-10 h-10 object-cover rounded"/></td>
+                <td className="p-3">{product.name}</td>
+                <td className="p-3">৳ {product.price}</td>
+                <td className="p-3">
+                  <button onClick={() => handleDelete(product.id)} className="text-red-500 hover:text-red-700 font-bold">Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
-);
+  );
+};
+
+// ৩. অর্ডার লিস্ট এবং স্ট্যাটাস চেঞ্জ
+const OrderList = () => {
+  const [orders, setOrders] = useState([]);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+      const snapshot = await getDocs(q);
+      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    };
+    fetchOrders();
+  }, []);
+
+  const updateStatus = async (orderId, newStatus) => {
+    await updateDoc(doc(db, "orders", orderId), { status: newStatus });
+    alert("Status Updated!");
+    window.location.reload();
+  };
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold mb-4">অর্ডার লিস্ট ({orders.length})</h2>
+      <div className="grid gap-4">
+        {orders.map(order => (
+          <div key={order.id} className="bg-white p-4 rounded shadow border-l-4 border-[#c21760]">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-bold text-lg">{order.orderId}</h3>
+                <p className="text-sm text-gray-600">Customer: {order.customer?.name} ({order.customer?.phone})</p>
+                <p className="text-sm text-gray-600">Address: {order.customer?.address}</p>
+                <div className="mt-2 text-sm font-semibold">Total: ৳ {order.total}</div>
+              </div>
+              <div className="text-right">
+                <span className={`px-2 py-1 rounded text-xs text-white ${order.status==='Pending'?'bg-yellow-500':'bg-green-500'}`}>
+                  {order.status}
+                </span>
+                <div className="mt-2">
+                  <select 
+                    className="border p-1 text-xs rounded"
+                    onChange={(e) => updateStatus(order.id, e.target.value)}
+                    defaultValue={order.status}
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Delivered">Delivered</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export default AdminDashboard;
